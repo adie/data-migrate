@@ -252,7 +252,7 @@ namespace :data do
 
     desc "Display status of data migrations"
     task :status => :environment do
-      config = ActiveRecord::Base.configurations[Rails.env || 'development']
+      config = database_config
       ActiveRecord::Base.establish_connection(config)
       unless ActiveRecord::Base.connection.table_exists?(DataMigrate::DataMigrator.schema_migrations_table_name)
         puts 'Data migrations table does not exist yet.'
@@ -268,7 +268,7 @@ namespace :data do
         end
       end
       # output
-      puts "\ndatabase: #{config['database']}\n\n"
+      puts "\ndatabase: #{config.is_a?(Hash) ? config['database'] : config.inspect}\n\n"
       puts "#{"Status".center(8)}  #{"Migration ID".ljust(14)}  Migration Name"
       puts "-" * 50
       file_list.each do |file|
@@ -329,7 +329,7 @@ def sort_string migration
 end
 
 def connect_to_database
-  config = ActiveRecord::Base.configurations[Rails.env || 'development']
+  config = database_config
   ActiveRecord::Base.establish_connection(config)
 
   unless ActiveRecord::Base.connection.table_exists?(DataMigrate::DataMigrator.schema_migrations_table_name)
@@ -343,6 +343,10 @@ def connect_to_database
   config
 end
 
+def database_config
+  ActiveRecord::Base.configurations[Rails.env || 'development'] || ENV["DATABASE_URL"]
+end
+
 def past_migrations sort=nil
   sort = sort.downcase if sort
   db_list_data = ActiveRecord::Base.connection.select_values("SELECT version FROM #{DataMigrate::DataMigrator.schema_migrations_table_name}").sort
@@ -353,8 +357,7 @@ def past_migrations sort=nil
 end
 
 def assure_data_schema_table
-  config = ActiveRecord::Base.configurations[Rails.env || 'development'] || ENV["DATABASE_URL"]
-  ActiveRecord::Base.establish_connection(config)
+  ActiveRecord::Base.establish_connection(database_config)
   sm_table = DataMigrate::DataMigrator.schema_migrations_table_name
 
   unless ActiveRecord::Base.connection.table_exists?(sm_table)
