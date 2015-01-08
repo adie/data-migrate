@@ -344,7 +344,7 @@ def connect_to_database
 end
 
 def database_config
-  ActiveRecord::Base.configurations[Rails.env || 'development'] || ENV["DATABASE_URL"]
+  ENV["DATABASE_URL"] || ActiveRecord::Base.configurations[Rails.env || 'development']
 end
 
 def past_migrations sort=nil
